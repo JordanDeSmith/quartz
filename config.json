@@ -1,0 +1,26 @@
+[
+    {
+        "key": "k",
+        "modifiers": [],
+        "type": "sound",
+        "filePath": "sounds/Sounds/ARU.wav",
+        "loopable": false
+    },
+    {
+        "key": "k",
+        "modifiers": ["shift"],
+        "type": "sound",
+        "filePath": "sounds/Sounds/Accessing1.wav",
+        "loopable": true
+    },
+    {
+        "key": ".",
+        "modifiers": ["alt"],
+        "type": "stopAll"
+    },
+    {
+        "key": "/",
+        "modifiers": [],
+        "type": "stopLooping"
+    }
+]
