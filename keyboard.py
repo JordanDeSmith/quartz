@@ -1,14 +1,13 @@
 from soundPlayer import SoundPlayer
-import kivy
 import os
 import json
+import kivy
 from kivy.uix.widget import Widget
-kivy.require('2.0.0') # replace with your current kivy version !
-
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.core.window import Window
+kivy.require('2.0.0') # replace with your current kivy version !
 
 class Keyboard(Widget):
     soundPlayer = SoundPlayer()
@@ -28,6 +27,7 @@ class Keyboard(Widget):
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.add_widget(Label(text="Keyboard", pos=(100,100)))
 
+        #TODO: ability to load different config file.
         self.configData = json.load(open('config.json'))
         self.currentlyLooping = []
 
@@ -46,7 +46,7 @@ class Keyboard(Widget):
             print(modifiers)
         try:
             for i in self.configData:
-                if (i["key"] == keycode[1] and i["modifiers"] == modifiers):
+                if (i["key"] == keycode[1] and set(i["modifiers"]) == set(modifiers)):
                     if i["type"] == "sound":
                         if (i["loopable"]):
                             if ([keycode[1], modifiers] in self.currentlyLooping):
