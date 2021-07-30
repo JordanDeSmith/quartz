@@ -7,7 +7,7 @@ from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.core.window import Window
-kivy.require('2.0.0') # replace with your current kivy version !
+kivy.require('2.0.0')
 
 class Keyboard(Widget):
     soundPlayer = SoundPlayer()
@@ -49,14 +49,14 @@ class Keyboard(Widget):
                 if (i["key"] == keycode[1] and set(i["modifiers"]) == set(modifiers)):
                     if i["type"] == "sound":
                         if (i["loopable"]):
-                            if ([keycode[1], modifiers] in self.currentlyLooping):
+                            if ((keycode[1], modifiers) in self.currentlyLooping):
                                 print("Stopping looping " + i["filePath"])
                                 self.soundPlayer.stopRepeating(i["filePath"])
-                                self.currentlyLooping.remove([keycode[1], modifiers])
+                                self.currentlyLooping.remove((keycode[1], modifiers))
                             else:
                                 print("Starting looping " + i["filePath"])
                                 self.soundPlayer.playSound(i["filePath"], True)
-                                self.currentlyLooping.append([keycode[1], modifiers])
+                                self.currentlyLooping.append((keycode[1], modifiers))
                         else:
                             print("Playing " + i["filePath"])
                             self.soundPlayer.playSound(i["filePath"])
