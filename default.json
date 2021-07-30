@@ -1,0 +1,9 @@
+[
+    {
+        "key":"j",
+        "modifiers":[],
+        "type":"sound",
+        "filePath":"sounds/Sounds/ARU.wav",
+        "loopable":false
+    }
+]

@@ -24,7 +24,7 @@ class SoundPlayer:
         """
         waveObj = sa.WaveObject.from_wave_file(fileName)
         if waveObj.sample_rate not in SUPPORTED_SAMPLE_RATES:
-            raise ValueError("File has unsuported sample rate")
+            raise ValueError(f"File {fileName} has unsuported sample rate")
         if looping:
             self.loopingSounds.append(LoopSound(fileName))
         else:
