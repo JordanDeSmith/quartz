@@ -3,59 +3,75 @@
         "key": "k",
         "modifiers": [],
         "type": "sound",
-        "filePath": "sounds/Sounds/ARU.wav",
-        "loopable": false
+        "data":{
+            "filePath": "sounds/Sounds/ARU.wav",
+            "loopable": false
+        }
     },
     {
         "key": "k",
         "modifiers": ["shift"],
         "type": "sound",
-        "filePath": "sounds/Sounds/Death Star Alarm.wav",
-        "loopable": true
+        "data":{
+            "filePath": "sounds/Sounds/Death Star Alarm.wav",
+            "loopable": true
+        }
     },
     {
         "key": "k",
         "modifiers": ["ctrl", "shift"],
         "type": "sound",
-        "filePath":"sounds/Sounds/EMP.wav",
-        "loopable":false
+        "data":{
+            "filePath":"sounds/Sounds/EMP.wav",
+            "loopable":false
+        }
     },
     {
         "key": "k",
         "modifiers": ["alt"],
         "type": "sound",
-        "filePath":"sounds/Sounds/Scanned.wav",
-        "loopable":false
+        "data":{
+            "filePath":"sounds/Sounds/Scanned.wav",
+            "loopable":false
+        }
     },
     {
         "key": "k",
         "modifiers": ["alt", "shift"],
         "type": "sound",
-        "filePath":"sounds/Sounds/Doors.wav",
-        "loopable":false
+        "data":{
+            "filePath":"sounds/Sounds/Doors.wav",
+            "loopable":false
+        }
     },
     {
         "key": "k",
         "modifiers": ["ctrl", "alt"],
         "type": "sound",
-        "filePath":"sounds/Sounds/Door Up.wav",
-        "loopable":true
+        "data":{
+            "filePath":"sounds/Sounds/Door Up.wav",
+            "loopable":true
+        }
     },
     {
         "key": "k",
         "modifiers": ["ctrl", "shift", "alt"],
         "type": "sound",
-        "filePath":"sounds/Sounds/Error.wav",
-        "loopable":false
+        "data":{
+            "filePath":"sounds/Sounds/Error.wav",
+            "loopable":false
+        }
     },
     {
         "key": ".",
         "modifiers": ["alt"],
-        "type": "stopAll"
+        "type": "stopAll",
+        "data":{}
     },
     {
         "key": "/",
         "modifiers": [],
-        "type": "stopLooping"
+        "type": "stopLooping",
+        "data":{}
     }
 ]

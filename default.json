@@ -3,7 +3,9 @@
         "key":"j",
         "modifiers":[],
         "type":"sound",
-        "filePath":"sounds/Sounds/ARU.wav",
-        "loopable":false
+        "data":{
+            "filePath":"sounds/Sounds/ARU.wav",
+            "loopable":false
+        }
     }
 ]
