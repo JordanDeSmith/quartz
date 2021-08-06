@@ -73,5 +73,23 @@
         "modifiers": [],
         "type": "stopLooping",
         "data":{}
+    },
+    {
+        "key":"k",
+        "modifiers":["capslock"],
+        "type":"sound",
+        "data":{
+            "filePath":"sounds/Sounds/Plasma Torpedo.wav",
+            "loopable":false
+        }
+    },
+    {
+        "key":"j",
+        "modifiers":[],
+        "type":"sound",
+        "data":{
+            "filePath":"sounds/Sounds/Plasma Torpedo.wav",
+            "loopable":false
+        }
     }
 ]

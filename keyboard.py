@@ -10,6 +10,8 @@ from kivy.uix.dropdown import DropDown
 from kivy.core.window import Window
 kivy.require('2.0.0')
 
+MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock']
+
 class Keyboard(Widget):
     soundPlayer = SoundPlayer()
     BASE_DIRECTORY = "./sounds/"
@@ -54,29 +56,32 @@ class Keyboard(Widget):
         self.soundPlayer.stopAll()
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl']
-        if (keycode[1] not in MODIFIERS):
+        if keycode[1] not in MODIFIERS and keycode[1] in self.configData:
             try:
-                if keycode[1] in self.configData:
-                    for i in self.configData[keycode[1]]:
-                        if (set(i["modifiers"]) == set(modifiers)):
-                            if i["type"] == "sound":
-                                if (i["data"]["loopable"]):
-                                    if ((keycode[1], modifiers) in self.currentlyLooping):
-                                        self.soundPlayer.stopRepeating(i["data"]["filePath"])
-                                        self.currentlyLooping.remove((keycode[1], modifiers))
-                                    else:
-                                        self.soundPlayer.playSound(i["data"]["filePath"], True)
-                                        self.currentlyLooping.append((keycode[1], modifiers))
+                """ To make capslock not make a difference
+                if "capslock" in modifiers:
+                    modifiers.remove("capslock")
+                """
+                modifiers = set(modifiers)
+                for i in self.configData[keycode[1]]:
+                    if (set(i["modifiers"]) == modifiers):
+                        if i["type"] == "sound":
+                            if (i["data"]["loopable"]):
+                                if ((keycode[1], modifiers) in self.currentlyLooping):
+                                    self.soundPlayer.stopRepeating(i["data"]["filePath"])
+                                    self.currentlyLooping.remove((keycode[1], modifiers))
                                 else:
-                                    self.soundPlayer.playSound(i["data"]["filePath"])
-                            elif i["type"] == "stopAll":
-                                self.soundPlayer.stopAll()
-                                self.currentlyLooping = []
-                            elif i["type"] == "stopLooping":
-                                self.soundPlayer.stopAllRepeating()
-                                self. currentlyLooping = []
-                            break;
+                                    self.soundPlayer.playSound(i["data"]["filePath"], True)
+                                    self.currentlyLooping.append((keycode[1], modifiers))
+                            else:
+                                self.soundPlayer.playSound(i["data"]["filePath"])
+                        elif i["type"] == "stopAll":
+                            self.soundPlayer.stopAll()
+                            self.currentlyLooping = []
+                        elif i["type"] == "stopLooping":
+                            self.soundPlayer.stopAllRepeating()
+                            self. currentlyLooping = []
+                        break;
             except FileNotFoundError as e:
                 print(e)
             except ValueError as e:
