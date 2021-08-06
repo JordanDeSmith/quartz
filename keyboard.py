@@ -20,12 +20,12 @@ class Keyboard(Widget):
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.add_widget(Label(text="Keyboard", pos=(100,100)))
 
-        #TODO: Load the last used file first. 
+        self.settings = json.load(open("settings.json"))
         self.jsonFiles = []
         for file in os.listdir():
-            if file.endswith(".json"):
+            if file.endswith(".json") and not file.endswith("settings.json"):
                 self.jsonFiles.append(file)
-        jsonData = json.load(open(self.jsonFiles[0]))
+        jsonData = json.load(open(self.settings["lastUsedConfig"]))
         self.configData = {}
         for i in jsonData:
             if i["key"] in self.configData:
@@ -40,7 +40,7 @@ class Keyboard(Widget):
             btn.bind(on_release=lambda btn: dropDown.select(btn.text))
             dropDown.add_widget(btn)
 
-        self.configButton = Button(text = self.jsonFiles[0], width=200, size_hint=(None,None), pos=(200,200))
+        self.configButton = Button(text = self.settings["lastUsedConfig"], width=200, size_hint=(None,None), pos=(200,200))
         self.configButton.bind(on_release=dropDown.open)
 
         dropDown.bind(on_select=lambda instance, x: self.change_config(x))
@@ -93,6 +93,7 @@ class Keyboard(Widget):
             else:
                 self.configData[i["key"]] = [{"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
         setattr(self.configButton, "text", configFile)
+        self.settings["lastUsedConfig"] = configFile
 
 
 class KeyboardApp(App):
@@ -107,6 +108,8 @@ class KeyboardApp(App):
     
     def exit(self, event):
         self.keyboard.stopAll()
+        with open("settings.json", 'w') as outFile:
+            json.dump(self.keyboard.settings, outFile)
         self.stop()
 
 
