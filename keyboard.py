@@ -1,4 +1,5 @@
 from soundPlayer import SoundPlayer
+from wave import Error as Wave_Error
 import os
 import json
 import kivy
@@ -84,6 +85,8 @@ class Keyboard(Widget):
                         break;
             except FileNotFoundError as e:
                 print(e)
+            except Wave_Error as wave_error:
+                print(wave_error)
             except ValueError as e:
                 print(e)
 
