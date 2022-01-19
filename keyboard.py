@@ -1,4 +1,5 @@
-from soundPlayer import SoundPlayer
+"""Runs a GUI for sound keyboard"""
+
 from wave import Error as Wave_Error
 import os
 import json
@@ -9,12 +10,14 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.dropdown import DropDown
 from kivy.core.window import Window
+from soundPlayer import SoundPlayer
 kivy.require('2.0.0')
 
 MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock']
 
 class Keyboard(Widget):
-    soundPlayer = SoundPlayer()
+    """Main keyboard class"""
+    sound_player = SoundPlayer()
     BASE_DIRECTORY = "./sounds/"
 
     def __init__(self, **kwargs):
@@ -31,110 +34,120 @@ class Keyboard(Widget):
         with open("settings.json") as settings_file:
             self.settings = json.load(settings_file)
 
-        self.jsonFiles = []
+        self.json_files = []
         for file in os.listdir():
             if file.endswith(".json") and not file.endswith("settings.json"):
-                self.jsonFiles.append(file)
-        if len(self.jsonFiles) == 0:
+                self.json_files.append(file)
+        if len(self.json_files) == 0:
             raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
 
         if self.settings["lastUsedConfig"] is None:
-            jsonData = json.load(open(self.jsonFiles[0]))
-            self.settings["lastUsedConfig"] = self.jsonFiles[0]
+            json_data = json.load(open(self.json_files[0]))
+            self.settings["lastUsedConfig"] = self.json_files[0]
         else:
-            jsonData = json.load(open(self.settings["lastUsedConfig"]))
-        self.configData = {}
-        for i in jsonData:
-            if i["key"] in self.configData:
-                self.configData[i["key"]].append({"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
+            json_data = json.load(open(self.settings["lastUsedConfig"]))
+        self.config_data = {}
+        for i in json_data:
+            if i["key"] in self.config_data:
+                self.config_data[i["key"]].append(
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
             else:
-                self.configData[i["key"]] = [{"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
-        self.currentlyLooping = []
+                self.config_data[i["key"]] = [
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+        self.currently_looping = []
 
-        dropDown = DropDown()
-        for i in self.jsonFiles:
+        drop_down = DropDown()
+        for i in self.json_files:
             btn = Button(text=i, size_hint_y=None, height=30, width=200)
-            btn.bind(on_release=lambda btn: dropDown.select(btn.text))
-            dropDown.add_widget(btn)
+            btn.bind(on_release=lambda btn: drop_down.select(btn.text))
+            drop_down.add_widget(btn)
 
-        self.configButton = Button(text = self.settings["lastUsedConfig"], width=200, size_hint=(None,None), pos=(200,200))
-        self.configButton.bind(on_release=dropDown.open)
+        self.config_button = Button(text = self.settings["lastUsedConfig"],
+            width=200, size_hint=(None,None), pos=(200,200))
+        self.config_button.bind(on_release=drop_down.open)
 
-        dropDown.bind(on_select=lambda instance, x: self.change_config(x))
-        self.add_widget(self.configButton)
+        drop_down.bind(on_select=lambda instance, x: self.change_config(x))
+        self.add_widget(self.config_button)
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
-    
-    def stopAll(self):
-        self.soundPlayer.stopAll()
+
+    def stop_all(self):
+        """Stops all sounds immediately"""
+        self.sound_player.stopAll()
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        if keycode[1] not in MODIFIERS and keycode[1] in self.configData:
+        if keycode[1] not in MODIFIERS and keycode[1] in self.config_data:
             try:
                 """ To make capslock not make a difference
                 if "capslock" in modifiers:
                     modifiers.remove("capslock")
                 """
                 modifiers = set(modifiers)
-                for i in self.configData[keycode[1]]:
-                    if (set(i["modifiers"]) == modifiers):
+                for i in self.config_data[keycode[1]]:
+                    if set(i["modifiers"]) == modifiers:
                         if i["type"] == "sound":
-                            if (i["data"]["loopable"]):
-                                if ((keycode[1], modifiers) in self.currentlyLooping):
-                                    self.soundPlayer.stopRepeating(i["data"]["filePath"])
-                                    self.currentlyLooping.remove((keycode[1], modifiers))
+                            if i["data"]["loopable"]:
+                                if (keycode[1], modifiers) in self.currently_looping:
+                                    self.sound_player.stopRepeating(i["data"]["filePath"])
+                                    self.currently_looping.remove((keycode[1], modifiers))
                                 else:
-                                    self.soundPlayer.playSound(i["data"]["filePath"], True)
-                                    self.currentlyLooping.append((keycode[1], modifiers))
+                                    self.sound_player.playSound(i["data"]["filePath"], True)
+                                    self.currently_looping.append((keycode[1], modifiers))
                             else:
-                                self.soundPlayer.playSound(i["data"]["filePath"])
+                                self.sound_player.playSound(i["data"]["filePath"])
                         elif i["type"] == "stopAll":
-                            self.soundPlayer.stopAll()
-                            self.currentlyLooping = []
+                            self.sound_player.stopAll()
+                            self.currently_looping = []
                         elif i["type"] == "stopLooping":
-                            self.soundPlayer.stopAllRepeating()
-                            self. currentlyLooping = []
-                        break;
-            except FileNotFoundError as e:
-                print(e)
+                            self.sound_player.stopAllRepeating()
+                            self. currently_looping = []
+                        break
+            except FileNotFoundError as error:
+                print(error)
             except Wave_Error as wave_error:
                 print(wave_error)
-            except ValueError as e:
-                print(e)
+            except ValueError as error:
+                print(error)
 
         return True
 
-    def change_config(self, configFile):
-        jsonData = json.load(open(configFile))
-        self.configData = {}
-        for i in jsonData:
-            if i["key"] in self.configData:
-                self.configData[i["key"]].append({"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
+    def change_config(self, config_file):
+        """Changes the loaded config file"""
+        json_data = json.load(open(config_file))
+        self.config_data = {}
+        for i in json_data:
+            if i["key"] in self.config_data:
+                self.config_data[i["key"]].append(
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
             else:
-                self.configData[i["key"]] = [{"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
-        setattr(self.configButton, "text", configFile)
-        self.settings["lastUsedConfig"] = configFile
+                self.config_data[i["key"]] = [
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+        setattr(self.config_button, "text", config_file)
+        self.settings["lastUsedConfig"] = config_file
 
     def reset_settings(self):
+        """Resets all settings to default values"""
         self.settings = {"lastUsedConfig": None}
         with open("settings.json", 'w') as settings_file:
             json.dump(self.settings, settings_file)
 
 
 class KeyboardApp(App):
+    """Application start for Kivy"""
     def build(self):
         parent = Widget()
         self.keyboard = Keyboard()
         parent.add_widget(self.keyboard)
-        exitButton = Button(text="Exit")
-        exitButton.bind(on_press=self.exit)
-        parent.add_widget(exitButton)
+        exit_button = Button(text="Exit")
+        exit_button.bind(on_press=self.exit)
+        parent.add_widget(exit_button)
         return parent
-    
+
     def exit(self, event):
-        self.keyboard.stopAll()
+        """Stops all sounds and writes out settings before stopping"""
+        self.keyboard.stop_all()
         with open("settings.json", 'w') as outFile:
             json.dump(self.keyboard.settings, outFile)
         self.stop()
