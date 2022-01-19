@@ -23,12 +23,26 @@ class Keyboard(Widget):
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.add_widget(Label(text="Keyboard", pos=(100,100)))
 
-        self.settings = json.load(open("settings.json"))
+        self.settings = {}
+        if not os.path.exists('settings.json'):
+            print("No settings file: creating new")
+            open("settings.json", 'w+')
+            self.reset_settings()
+        with open("settings.json") as settings_file:
+            self.settings = json.load(settings_file)
+
         self.jsonFiles = []
         for file in os.listdir():
             if file.endswith(".json") and not file.endswith("settings.json"):
                 self.jsonFiles.append(file)
-        jsonData = json.load(open(self.settings["lastUsedConfig"]))
+        if len(self.jsonFiles) == 0:
+            raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
+
+        if self.settings["lastUsedConfig"] is None:
+            jsonData = json.load(open(self.jsonFiles[0]))
+            self.settings["lastUsedConfig"] = self.jsonFiles[0]
+        else:
+            jsonData = json.load(open(self.settings["lastUsedConfig"]))
         self.configData = {}
         for i in jsonData:
             if i["key"] in self.configData:
@@ -102,6 +116,11 @@ class Keyboard(Widget):
                 self.configData[i["key"]] = [{"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
         setattr(self.configButton, "text", configFile)
         self.settings["lastUsedConfig"] = configFile
+
+    def reset_settings(self):
+        self.settings = {"lastUsedConfig": None}
+        with open("settings.json", 'w') as settings_file:
+            json.dump(self.settings, settings_file)
 
 
 class KeyboardApp(App):
