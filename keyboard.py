@@ -148,8 +148,8 @@ class KeyboardApp(App):
     def exit(self, event):
         """Stops all sounds and writes out settings before stopping"""
         self.keyboard.stop_all()
-        with open("settings.json", 'w') as outFile:
-            json.dump(self.keyboard.settings, outFile)
+        with open("settings.json", 'w') as out_file:
+            json.dump(self.keyboard.settings, out_file)
         self.stop()
 
 

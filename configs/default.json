@@ -1,0 +1,14 @@
+[
+    {
+        "key":".",
+        "modifiers":["meta"],
+        "type":"stopAll",
+        "data":{}
+    },
+    {
+        "key":"/",
+        "modifiers":[],
+        "type":"stopLooping",
+        "data":{}
+    }
+]
