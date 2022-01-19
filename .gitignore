@@ -20,3 +20,5 @@ sounds/*
 !sounds/README.txt
 
 configs/*
+
+settings.json
