@@ -18,7 +18,7 @@ MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock']
 class Keyboard(Widget):
     """Main keyboard class"""
     sound_player = SoundPlayer()
-    BASE_DIRECTORY = "./sounds/"
+    CONFIG_PATH = 'configs/'
 
     def __init__(self, **kwargs):
         super(Keyboard, self).__init__(**kwargs)
@@ -35,17 +35,17 @@ class Keyboard(Widget):
             self.settings = json.load(settings_file)
 
         self.json_files = []
-        for file in os.listdir():
+        for file in os.listdir(os.path.join(os.path.curdir, Keyboard.CONFIG_PATH)):
             if file.endswith(".json") and not file.endswith("settings.json"):
                 self.json_files.append(file)
         if len(self.json_files) == 0:
             raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
 
         if self.settings["lastUsedConfig"] is None:
-            json_data = json.load(open(self.json_files[0]))
+            json_data = json.load(open(Keyboard.CONFIG_PATH + self.json_files[0]))
             self.settings["lastUsedConfig"] = self.json_files[0]
         else:
-            json_data = json.load(open(self.settings["lastUsedConfig"]))
+            json_data = json.load(open(Keyboard.CONFIG_PATH + self.settings["lastUsedConfig"]))
         self.config_data = {}
         for i in json_data:
             if i["key"] in self.config_data:
@@ -115,7 +115,7 @@ class Keyboard(Widget):
 
     def change_config(self, config_file):
         """Changes the loaded config file"""
-        json_data = json.load(open(config_file))
+        json_data = json.load(open(Keyboard.CONFIG_PATH + config_file))
         self.config_data = {}
         for i in json_data:
             if i["key"] in self.config_data:
