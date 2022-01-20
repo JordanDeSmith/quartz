@@ -25,6 +25,7 @@ class Keyboard(Widget):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.add_widget(Label(text="Keyboard", pos=(100,100)))
+        Window.bind(on_request_close=self.on_request_close)
 
         self.settings = {}
         if not os.path.exists('settings.json'):
@@ -68,6 +69,12 @@ class Keyboard(Widget):
 
         drop_down.bind(on_select=lambda instance, x: self.change_config(x))
         self.add_widget(self.config_button)
+
+    def on_request_close(self, *args):
+        self.stop_all()
+        with open("settings.json", 'w') as out_file:
+            json.dump(self.settings, out_file)
+        return False
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -140,17 +147,7 @@ class KeyboardApp(App):
         parent = Widget()
         self.keyboard = Keyboard()
         parent.add_widget(self.keyboard)
-        exit_button = Button(text="Exit")
-        exit_button.bind(on_press=self.exit)
-        parent.add_widget(exit_button)
         return parent
-
-    def exit(self, event):
-        """Stops all sounds and writes out settings before stopping"""
-        self.keyboard.stop_all()
-        with open("settings.json", 'w') as out_file:
-            json.dump(self.keyboard.settings, out_file)
-        self.stop()
 
 
 if __name__ == '__main__':
