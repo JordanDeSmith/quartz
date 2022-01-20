@@ -10,5 +10,14 @@
         "modifiers":[],
         "type":"stopLooping",
         "data":{}
+    },
+    {
+        "key":"spacebar",
+        "modifiers":[],
+        "type":"sound",
+        "data":{
+            "filePath": "/Users/Jordan/Documents/Quartz Audio/Data/Sounds/Hail.wav",
+            "loopable": false
+        }
     }
 ]

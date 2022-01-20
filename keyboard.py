@@ -15,65 +15,34 @@ kivy.require('2.0.0')
 
 MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock']
 
-class Keyboard(Widget):
+class Observer():
+    OBSERVERS = []
+    def __init__(self):
+        Observer.OBSERVERS.append(self)
+        self.observing = {}
+    def observe(self, event, callback):
+        self.observing[event] = callback
+
+class Keyboard(Widget, Observer):
     """Main keyboard class"""
     sound_player = SoundPlayer()
     CONFIG_PATH = 'configs/'
 
-    def __init__(self, **kwargs):
+    def __init__(self, settings, config_data, **kwargs):
         super(Keyboard, self).__init__(**kwargs)
+        self.settings = settings
+        self.config_data = config_data
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.add_widget(Label(text="Keyboard", pos=(100,100)))
         Window.bind(on_request_close=self.on_request_close)
-
-        self.settings = {}
-        if not os.path.exists('settings.json'):
-            print("No settings file: creating new")
-            open("settings.json", 'w+')
-            self.reset_settings()
-        with open("settings.json") as settings_file:
-            self.settings = json.load(settings_file)
-
-        self.json_files = []
-        for file in os.listdir(os.path.join(os.path.curdir, Keyboard.CONFIG_PATH)):
-            if file.endswith(".json") and not file.endswith("settings.json"):
-                self.json_files.append(file)
-        if len(self.json_files) == 0:
-            raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
-
-        if self.settings["lastUsedConfig"] is None:
-            json_data = json.load(open(Keyboard.CONFIG_PATH + self.json_files[0]))
-            self.settings["lastUsedConfig"] = self.json_files[0]
-        else:
-            json_data = json.load(open(Keyboard.CONFIG_PATH + self.settings["lastUsedConfig"]))
-        self.config_data = {}
-        for i in json_data:
-            if i["key"] in self.config_data:
-                self.config_data[i["key"]].append(
-                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
-            else:
-                self.config_data[i["key"]] = [
-                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
         self.currently_looping = []
 
-        drop_down = DropDown()
-        for i in self.json_files:
-            btn = Button(text=i, size_hint_y=None, height=30, width=200)
-            btn.bind(on_release=lambda btn: drop_down.select(btn.text))
-            drop_down.add_widget(btn)
-
-        self.config_button = Button(text = self.settings["lastUsedConfig"],
-            width=200, size_hint=(None,None), pos=(200,200))
-        self.config_button.bind(on_release=drop_down.open)
-
-        drop_down.bind(on_select=lambda instance, x: self.change_config(x))
-        self.add_widget(self.config_button)
+    def update_config(self, config_data):
+        self.config_data = config_data
 
     def on_request_close(self, *args):
         self.stop_all()
-        with open("settings.json", 'w') as out_file:
-            json.dump(self.settings, out_file)
         return False
 
     def _keyboard_closed(self):
@@ -120,6 +89,65 @@ class Keyboard(Widget):
 
         return True
 
+
+class KeyboardApp(App):
+    """Application start for Kivy"""
+    def build(self):
+        parent = Widget()
+        Window.bind(on_request_close=self.on_request_close)
+
+        self.settings = {}
+        if not os.path.exists('settings.json'):
+            print("No settings file: creating new")
+            open("settings.json", 'w+')
+            self.reset_settings()
+        with open("settings.json") as settings_file:
+            self.settings = json.load(settings_file)
+
+        self.json_files = []
+        for file in os.listdir(os.path.join(os.path.curdir, Keyboard.CONFIG_PATH)):
+            if file.endswith(".json") and not file.endswith("settings.json"):
+                self.json_files.append(file)
+        if len(self.json_files) == 0:
+            raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
+
+        if self.settings["lastUsedConfig"] is None:
+            json_data = json.load(open(Keyboard.CONFIG_PATH + self.json_files[0]))
+            self.settings["lastUsedConfig"] = self.json_files[0]
+        else:
+            json_data = json.load(open(Keyboard.CONFIG_PATH + self.settings["lastUsedConfig"]))
+        self.config_data = {}
+        for i in json_data:
+            if i["key"] in self.config_data:
+                self.config_data[i["key"]].append(
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
+            else:
+                self.config_data[i["key"]] = [
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+
+        drop_down = DropDown()
+        for i in self.json_files:
+            btn = Button(text=i, size_hint_y=None, height=30, width=200)
+            btn.bind(on_release=lambda btn: drop_down.select(btn.text))
+            drop_down.add_widget(btn)
+
+        self.config_button = Button(text = self.settings["lastUsedConfig"],
+            width=200, size_hint=(None,None), pos=(200,200))
+        self.config_button.bind(on_release=drop_down.open)
+
+        drop_down.bind(on_select=lambda instance, x: self.change_config(x))
+        parent.add_widget(self.config_button)
+
+
+        self.keyboard = Keyboard(self.settings, self.config_data)
+        self.keyboard.observe("config_update", self.keyboard.update_config)
+        parent.add_widget(self.keyboard)
+        return parent
+
+    def on_request_close(self, *args):
+        with open("settings.json", 'w') as out_file:
+            json.dump(self.settings, out_file)
+
     def change_config(self, config_file):
         """Changes the loaded config file"""
         json_data = json.load(open(Keyboard.CONFIG_PATH + config_file))
@@ -134,20 +162,18 @@ class Keyboard(Widget):
         setattr(self.config_button, "text", config_file)
         self.settings["lastUsedConfig"] = config_file
 
+        for observer in Observer.OBSERVERS:
+            if "config_update" in observer.observing:
+                observer.observing["config_update"](self.config_data)
+
     def reset_settings(self):
         """Resets all settings to default values"""
         self.settings = {"lastUsedConfig": None}
         with open("settings.json", 'w') as settings_file:
             json.dump(self.settings, settings_file)
-
-
-class KeyboardApp(App):
-    """Application start for Kivy"""
-    def build(self):
-        parent = Widget()
-        self.keyboard = Keyboard()
-        parent.add_widget(self.keyboard)
-        return parent
+        for observer in Observer.OBSERVERS:
+            if "setting_update" in observer.observing:
+                observer.observing["setting_update"](self.settings)
 
 
 if __name__ == '__main__':
