@@ -22,4 +22,4 @@ sounds/*
 configs/*
 !configs/default.json
 
-settings.json
+keyboard.ini
