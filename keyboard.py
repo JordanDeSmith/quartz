@@ -100,6 +100,7 @@ class EditKeyboard(Widget, Observer):
         self.add_widget(keyboard)
 
     def update_config(self, config):
+        #TODO: check if something has been changed and needs to be saved
         self.config = config
 
     def on_key_up(self, keyboard, keycode, text, modifiers):
@@ -110,10 +111,10 @@ class KeyboardApp(App):
     """Application start for Kivy"""
     def build_config(self, config):
         config.setdefaults('keyboard', {
-            'last_used_config': 'default.json'
+            'last_used_config': None
         })
 
-    def build_settings(self, settings): #TODO: Create on_config_change()
+    def build_settings(self, settings):
         json_data = """[{ 
             "type": "title",
             "title": "Keyboard" 
@@ -132,6 +133,26 @@ class KeyboardApp(App):
         
         settings.add_json_panel('Keyboard Config', self.config, data=json_data)
 
+    def on_config_change(self, config, section, key, value):
+        if config is self.config:
+            token = (section,key)
+            if token == ('keyboard', 'last_used_config'):
+                self.update_config_data(value)
+                self.keyboard.update_config(self.config_data)
+                self.edit_keyboard.update_config(self.config_data)
+                self.config_button.text = value
+
+    def update_config_data(self, file_name):
+        json_data = json.load(open(Keyboard.CONFIG_PATH + file_name))
+        self.config_data = {}
+        for i in json_data:
+            if i["key"] in self.config_data:
+                self.config_data[i["key"]].append(
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
+            else:
+                self.config_data[i["key"]] = [
+                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+
     def build(self):
         parent = Widget()
         Window.bind(on_request_close=self.on_request_close)
@@ -144,23 +165,16 @@ class KeyboardApp(App):
         if len(self.json_files) == 0:
             raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
 
-        #if self.settings.get('keyboard', 'last_used_config') is None: #TODO: Properly set things if there is no last known config
-            #self.settings.get('keyboard', 'last_used_config') = self.json_files[0]
-
-        if self.settings.get('keyboard', 'last_used_config') is None:
-            json_data = json.load(open(Keyboard.CONFIG_PATH + self.json_files[0]))
-            #self.settings.get('keyboard', 'last_used_config') = self.json_files[0] #TODO: properly set things if there is no last known config
+        if self.settings.get('keyboard', 'last_used_config') != "None" and self.settings.get(
+                'keyboard', 'last_used_config') in self.json_files:
+            self.update_config_data(self.settings.get('keyboard', 'last_used_config'))
         else:
-            json_data = json.load(open(Keyboard.CONFIG_PATH + self.settings.get('keyboard', 'last_used_config')))
-        self.config_data = {}
-        for i in json_data:
-            if i["key"] in self.config_data:
-                self.config_data[i["key"]].append(
-                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]})
-            else:
-                self.config_data[i["key"]] = [
-                    {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+            self.config.set('keyboard', 'last_used_config', self.json_files[0])
+            self.config.write()
+            self.update_config_data(self.json_files[0])
 
+        #TODO: Move button, label that it opens settings,
+        # and make separate label that shows what config we're using.
         self.config_button = Button(text = self.settings.get('keyboard', 'last_used_config'),
             width=200, size_hint=(None,None), pos=(200,600))
         self.config_button.bind(on_release=self.open_settings)
@@ -178,8 +192,6 @@ class KeyboardApp(App):
 
     def on_request_close(self, *args):
         pass #TODO: write out anything we need/check if things have changed
-        #with open("settings.json", 'w') as out_file:
-            #json.dump(self.settings, out_file)
 
     def edit_config(self, key, modifiers, new_file):
         print("Editing config")
