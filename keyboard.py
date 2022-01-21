@@ -1,6 +1,5 @@
 """Runs a GUI for sound keyboard"""
 
-from itertools import count
 from wave import Error as Wave_Error
 import os
 import json
@@ -35,7 +34,6 @@ class Keyboard(Widget, Observer):
         self.config_data = config_data
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self.add_widget(Label(text="Keyboard", pos=(100,100)))
         Window.bind(on_request_close=self.on_request_close)
         self.currently_looping = []
 
@@ -96,8 +94,10 @@ class EditKeyboard(Widget, Observer):
         super(EditKeyboard, self).__init__(**kwargs)
         self.config = config
         self.config_modifier = config_modifier
-        keyboard = VKeyboard(on_key_up=self.on_key_up)
-        self.add_widget(keyboard)
+        self.keyboard = VKeyboard(on_key_up=self.on_key_up)
+        self.keyboard.size = (1500,500)
+        self.keyboard.bind(on_key_up=self.on_key_up)
+        self.add_widget(self.keyboard)
 
     def update_config(self, config):
         #TODO: check if something has been changed and needs to be saved
@@ -154,8 +154,12 @@ class KeyboardApp(App):
                     {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
 
     def build(self):
+        kivy.config.Config.set('kivy', 'keyboard_mode', 'system')
+        kivy.config.Config.write()
+        
         parent = Widget()
         Window.bind(on_request_close=self.on_request_close)
+        Window.size = (750,500)
         self.settings = self.config
 
         self.json_files = []
@@ -180,13 +184,12 @@ class KeyboardApp(App):
         self.config_button.bind(on_release=self.open_settings)
         parent.add_widget(self.config_button)
 
-
-        self.keyboard = Keyboard(self.settings, self.config_data)
-        self.keyboard.observe("config_update", self.keyboard.update_config)
-        parent.add_widget(self.keyboard)
         self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config)
         self.edit_keyboard.observe("config_update", self.edit_keyboard.update_config)
         parent.add_widget(self.edit_keyboard)
+        self.keyboard = Keyboard(self.settings, self.config_data)
+        self.keyboard.observe("config_update", self.keyboard.update_config)
+        parent.add_widget(self.keyboard)
 
         return parent
 
