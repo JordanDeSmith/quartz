@@ -8,7 +8,8 @@ from kivy.uix.widget import Widget
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.vkeyboard import VKeyboard
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.core.window import Window
 from soundPlayer import SoundPlayer
 kivy.require('2.0.0')
@@ -88,24 +89,42 @@ class Keyboard(Widget, Observer):
 
         return True
 
-class EditKeyboard(Widget, Observer):
+class EditKeyboard(AnchorLayout, Observer):
     """Displays keyboard and allows for edits to config"""
     def __init__(self, config, config_modifier, **kwargs):
         super(EditKeyboard, self).__init__(**kwargs)
         self.config = config
         self.config_modifier = config_modifier
-        self.keyboard = VKeyboard(on_key_up=self.on_key_up)
+        """self.keyboard = VKeyboard(on_key_up=self.on_key_up)
         self.keyboard.size = (1500,500)
         self.keyboard.bind(on_key_up=self.on_key_up)
-        self.add_widget(self.keyboard)
+        self.add_widget(self.keyboard)"""
+        keyLayout = BoxLayout(orientation='vertical')
+        keys = [ #TODO: This works as a proof of concept, but really needs to be created better
+            ['esc','F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'],
+            ['`','1','2','3','4','5','6','7','8','9','0','-','=','delete'],
+            ['tab','q','w','e','r','t','y','u','i','o','p','[',']','\\',],
+            ['caps lock','a','s','d','f','g','h','j','k','l',';','\'','enter'],
+            ['shift', 'z','x','c','v','b','n','m',',','.','/','shift'],
+            ['function','control','command','space bar','command','option','<-','^','\/','->']
+        ]
+        for row in keys:
+            rowLayout = BoxLayout(orientation='horizontal')
+            for key in row:
+                rowLayout.add_widget(Button(text=key, on_release=self.on_key_up))
+            keyLayout.add_widget(rowLayout)
+        self.add_widget(keyLayout)
 
     def update_config(self, config):
         #TODO: check if something has been changed and needs to be saved
         self.config = config
 
-    def on_key_up(self, keyboard, keycode, text, modifiers):
-        print("Pressed key")
-        pass
+    def on_key_up(self, button):
+        print(f"Pressed {button.text}")
+        if button.background_color != [0.0, 0.0, 1.0, 1.0]:
+            button.background_color = 'blue'
+        else:
+            button.background_color ='red'
 
 class KeyboardApp(App):
     """Application start for Kivy"""
@@ -154,10 +173,7 @@ class KeyboardApp(App):
                     {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
 
     def build(self):
-        kivy.config.Config.set('kivy', 'keyboard_mode', 'system')
-        kivy.config.Config.write()
-        
-        parent = Widget()
+        parent = BoxLayout(orientation='vertical')
         Window.bind(on_request_close=self.on_request_close)
         Window.size = (750,500)
         self.settings = self.config
@@ -180,16 +196,16 @@ class KeyboardApp(App):
         #TODO: Move button, label that it opens settings,
         # and make separate label that shows what config we're using.
         self.config_button = Button(text = self.settings.get('keyboard', 'last_used_config'),
-            width=200, size_hint=(None,None), pos=(200,600))
+            width=200, size_hint=(None,None))
         self.config_button.bind(on_release=self.open_settings)
         parent.add_widget(self.config_button)
-
-        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config)
-        self.edit_keyboard.observe("config_update", self.edit_keyboard.update_config)
-        parent.add_widget(self.edit_keyboard)
         self.keyboard = Keyboard(self.settings, self.config_data)
         self.keyboard.observe("config_update", self.keyboard.update_config)
         parent.add_widget(self.keyboard)
+        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config, size_hint=(1,1.2),
+            anchor_x='center', anchor_y='center')
+        self.edit_keyboard.observe("config_update", self.edit_keyboard.update_config)
+        parent.add_widget(self.edit_keyboard)
 
         return parent
 
