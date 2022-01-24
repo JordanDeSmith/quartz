@@ -100,27 +100,28 @@ class EditKeyboard(AnchorLayout, Observer):
         self.keyboard.bind(on_key_up=self.on_key_up)
         self.add_widget(self.keyboard)"""
         keyLayout = BoxLayout(orientation='vertical')
-        keys = [ #TODO: This works as a proof of concept, but really needs to be created better
-            ['esc','F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'],
-            ['`','1','2','3','4','5','6','7','8','9','0','-','=','delete'],
-            ['tab','q','w','e','r','t','y','u','i','o','p','[',']','\\',],
-            ['caps lock','a','s','d','f','g','h','j','k','l',';','\'','enter'],
-            ['shift', 'z','x','c','v','b','n','m',',','.','/','shift'],
-            ['function','control','command','space bar','command','option','<-','^','\/','->']
-        ]
+        keys = json.load(open("layouts/macbook.json"))
         for row in keys:
             rowLayout = BoxLayout(orientation='horizontal')
-            for key in row:
-                rowLayout.add_widget(Button(text=key, on_release=self.on_key_up))
+            for key in row["keys"]:
+                if key["type"] == "key":
+                    rowLayout.add_widget(self.add_key(key, row["size_hint_y"]))
+                elif key["type"] == "layout":
+                    pass #TODO: layout type?
             keyLayout.add_widget(rowLayout)
         self.add_widget(keyLayout)
+
+    def add_key(self, key, size_hint_y):
+        """Separate function to separate scope and keep key_code in each button"""
+        return Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
+                        on_release=lambda button : self.on_key_up(button, key["key_code"]))
 
     def update_config(self, config):
         #TODO: check if something has been changed and needs to be saved
         self.config = config
 
-    def on_key_up(self, button):
-        print(f"Pressed {button.text}")
+    def on_key_up(self, button, key_code):
+        print(f"Pressed {key_code}")
         if button.background_color != [0.0, 0.0, 1.0, 1.0]:
             button.background_color = 'blue'
         else:
