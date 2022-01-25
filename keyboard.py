@@ -1,6 +1,5 @@
 """Runs a GUI for sound keyboard"""
 
-from multiprocessing.sharedctypes import Value
 from wave import Error as Wave_Error
 import os
 import json
@@ -15,7 +14,7 @@ from kivy.core.window import Window
 from soundPlayer import SoundPlayer
 kivy.require('2.0.0')
 
-MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock']
+MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock','super']
 
 class Observer():
     OBSERVERS = []
@@ -91,24 +90,29 @@ class Keyboard(Widget, Observer):
 
 class EditKeyboard(AnchorLayout, Observer):
     """Displays keyboard and allows for edits to config"""
-    def __init__(self, config, config_modifier, **kwargs):
+    def __init__(self, config, config_modifier, layout_file, **kwargs):
         super(EditKeyboard, self).__init__(**kwargs)
         self.config = config
         self.config_modifier = config_modifier
+        self.edit_modifiers = set()
+        self.edit_key = None
+        self.key_layout = None
         try:
-            self.change_layout()
+            self.change_layout(layout_file)
         except ValueError as error:
             print(error) #TODO: Better handle this error
 
-    def change_layout(self):
-        keyLayout = BoxLayout(orientation='vertical')
-        keys = json.load(open("layouts/macbook.json")) #TODO: Select file, don't just load this one
+    def change_layout(self, file_name):
+        if self.key_layout is not None:
+            self.remove_widget(self.key_layout)
+        self.key_layout = BoxLayout(orientation='vertical')
+        keys = json.load(open(file_name))
         for row in keys:
             rowLayout = BoxLayout(orientation='horizontal')
             for key in row["keys"]:
                 rowLayout.add_widget(self.add_key(key, row["size_hint_y"]))
-            keyLayout.add_widget(rowLayout)
-        self.add_widget(keyLayout)
+            self.key_layout.add_widget(rowLayout)
+        self.add_widget(self.key_layout)
 
     def add_key(self, key, size_hint_y):
         """Separate function to separate scope and keep key_code in each button"""
@@ -129,20 +133,34 @@ class EditKeyboard(AnchorLayout, Observer):
         self.config = config
 
     def on_key_up(self, button, key_code):
-        print(f"Pressed {key_code}")
-        if button.background_color != [0.0, 0.0, 1.0, 1.0]:
-            button.background_color = 'blue'
+        """If key in modifiers, highlight it, and add it to local modifiers
+            If it's already in local, remove it, and un-highlight it.
+            Otherwise update what key we're currently looking at
+            Then update a label (which I need to make...) to say what it is set to
+            And have something ready that can change what it is set to. 
+        """
+        if key_code in MODIFIERS:   #FIXME: If having multiple command/alt/etc. breaks if the other is clicked
+            if key_code in self.edit_modifiers:
+                button.background_color = [1,1,1,1]
+                self.edit_modifiers.remove(key_code)
+            else:
+                self.edit_modifiers.add(key_code)
+                button.background_color = 'red'
         else:
-            button.background_color ='red'
+            self.edit_key = key_code
+        print(f"Modifs: {self.edit_modifiers}\n{key_code}")
+        
 
 class KeyboardApp(App):
     """Application start for Kivy"""
 
     CONFIG_PATH = 'configs/'
+    LAYOUT_PATH = 'layouts/'
 
     def build_config(self, config):
         config.setdefaults('keyboard', {
-            'last_used_config': None
+            'last_used_config': None,
+            'layout_config':'macbook.json'
         })
 
     def build_settings(self, settings):
@@ -160,8 +178,20 @@ class KeyboardApp(App):
             json_data += f'"{file}"'
             if counter < len(self.json_files) - 1:
                 json_data += ','
+        json_data += """]
+            },
+            { "type":"options",
+            "title":"layout",
+            "desc":"The loaded layout",
+            "key": "layout_config",
+            "section": "keyboard",
+            "options": ["""
+        for counter, file in enumerate(self.layout_files):
+            json_data += f'"{file}"'
+            if counter < len(self.layout_files) - 1:
+                json_data += ','
         json_data += "]}]"
-        
+
         settings.add_json_panel('Keyboard Config', self.config, data=json_data)
 
     def on_config_change(self, config, section, key, value):
@@ -169,9 +199,11 @@ class KeyboardApp(App):
             token = (section,key)
             if token == ('keyboard', 'last_used_config'):
                 self.update_config_data(value)
-                self.keyboard.update_config(self.config_data)
-                self.edit_keyboard.update_config(self.config_data)
                 self.config_button.text = value
+            if token == ('keyboard', 'layout_config'):
+                self.edit_keyboard.change_layout(self.LAYOUT_PATH + value)
+
+
 
     def update_config_data(self, file_name):
         json_data = json.load(open(self.CONFIG_PATH + file_name))
@@ -183,6 +215,9 @@ class KeyboardApp(App):
             else:
                 self.config_data[i["key"]] = [
                     {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
+        for observer in Observer.OBSERVERS:
+            if "config_update" in observer.observing:
+                observer.observing["config_update"](self.config_data)
 
     def build(self):
         parent = BoxLayout(orientation='vertical')
@@ -197,13 +232,31 @@ class KeyboardApp(App):
         if len(self.json_files) == 0:
             raise RuntimeError("No config files") #TODO: Properly handle there being no config files.
 
+        config_file = ""
         if self.settings.get('keyboard', 'last_used_config') != "None" and self.settings.get(
                 'keyboard', 'last_used_config') in self.json_files:
-            self.update_config_data(self.settings.get('keyboard', 'last_used_config'))
+            config_file = self.settings.get('keyboard', 'last_used_config')
         else:
             self.config.set('keyboard', 'last_used_config', self.json_files[0])
             self.config.write()
-            self.update_config_data(self.json_files[0])
+            config_file = self.json_files[0]
+        self.update_config_data(config_file)
+
+        self.layout_files = []
+        for file in os.listdir(os.path.join(os.path.curdir, self.LAYOUT_PATH)):
+            if file.endswith(".json") and not file.endswith("settings.json"):
+                self.layout_files.append(file)
+        if len(self.layout_files) == 0:
+            raise RuntimeError("No layout files") #TODO: Properly handle no layout files
+
+        layout_file = self.LAYOUT_PATH
+        if self.settings.get('keyboard', 'layout_config') != "None" and self.settings.get(
+            'keyboard', 'layout_config') in self.layout_files:
+            layout_file += self.settings.get('keyboard', 'layout_config')
+        else:
+            self.config.set('keyboard', 'layout_config', self.layout_files[0])
+            self.config.write()
+            layout_file += self.layout_files[0]
 
         #TODO: Move button, label that it opens settings,
         # and make separate label that shows what config we're using.
@@ -214,7 +267,7 @@ class KeyboardApp(App):
         self.keyboard = Keyboard(self.settings, self.config_data)
         self.keyboard.observe("config_update", self.keyboard.update_config)
         parent.add_widget(self.keyboard)
-        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config, size_hint=(1,1.2),
+        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config, layout_file, size_hint=(1,1.2),
             anchor_x='center', anchor_y='center')
         self.edit_keyboard.observe("config_update", self.edit_keyboard.update_config)
         parent.add_widget(self.edit_keyboard)
