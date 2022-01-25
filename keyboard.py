@@ -103,15 +103,13 @@ class EditKeyboard(AnchorLayout, Observer):
             print(error) #TODO: Better handle this error
 
     def change_layout(self, file_name):
+        """Changes the edit_keyboard layout"""
         if self.key_layout is not None:
             self.remove_widget(self.key_layout)
         self.key_layout = BoxLayout(orientation='vertical')
         keys = json.load(open(file_name))
-        for row in keys:
-            rowLayout = BoxLayout(orientation='horizontal')
-            for key in row["keys"]:
-                rowLayout.add_widget(self.add_key(key, row["size_hint_y"]))
-            self.key_layout.add_widget(rowLayout)
+        for item in keys:
+            self.key_layout.add_widget(self.add_key(item, item["size_hint_y"]))
         self.add_widget(self.key_layout)
 
     def add_key(self, key, size_hint_y):
@@ -120,7 +118,7 @@ class EditKeyboard(AnchorLayout, Observer):
             return Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
                         on_release=lambda button : self.on_key_up(button, key["key_code"]))
         elif key["type"] == "box_layout":
-            boxLayout = BoxLayout(size_hint_y=size_hint_y, size_hint_x=key["size_hint_x"],
+            boxLayout = BoxLayout(size_hint_y=key["size_hint_y"], size_hint_x=key["size_hint_x"],
                             orientation=key["orientation"])
             for item in key["children"]:
                 boxLayout.add_widget(self.add_key(item, size_hint_y))
@@ -285,7 +283,7 @@ class KeyboardApp(App):
 
     def reset_settings(self):
         """Resets all settings to default values"""
-        self.settings = {"last_used_config": None}
+        self.settings = {"last_used_config": None, "layout_config": None}
         with open("settings.json", 'w') as settings_file:
             json.dump(self.settings, settings_file)
         for observer in Observer.OBSERVERS:
