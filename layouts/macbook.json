@@ -466,10 +466,68 @@
                 "size_hint_x":0.8
             },
             {
-                "type":"key",
-                "text":"arrow keys",
-                "key_code":"arrow keys??",
-                "size_hint_x":2.2
+                "type":"box_layout",
+                "size_hint_x":2.2,
+                "orientation":"horizontal",
+                "children":[
+                    {
+                        "type":"box_layout",
+                        "size_hint_x":1,
+                        "orientation":"vertical",
+                        "children":[
+                            {
+                                "type":"box_layout",
+                                "size_hint_x":1,
+                                "orientation":"horizontal",
+                                "children":[]
+                            },
+                            {
+                                "type":"key",
+                                "text":"<-",
+                                "key_code":"left",
+                                "size_hint_x":1
+                            }
+                        ]
+                    },
+                    {
+                        "type":"box_layout",
+                        "size_hint_x":1,
+                        "orientation":"vertical",
+                        "children":[
+                            {
+                                "type":"key",
+                                "text":"^",
+                                "key_code":"up",
+                                "size_hint_x":1
+                            },
+                            {
+                                "type":"key",
+                                "text":"down",
+                                "key_code":"down",
+                                "size_hint_x":1
+                            }
+                        ]
+                    },
+                    {
+                        "type":"box_layout",
+                        "size_hint_x":1,
+                        "orientation":"vertical",
+                        "children":[
+                            {
+                                "type":"box_layout",
+                                "size_hint_x":1,
+                                "orientation":"horizontal",
+                                "children":[]
+                            },
+                            {
+                                "type":"key",
+                                "text":"->",
+                                "key_code":"right",
+                                "size_hint_x":1
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }

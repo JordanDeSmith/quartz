@@ -1,5 +1,6 @@
 """Runs a GUI for sound keyboard"""
 
+from multiprocessing.sharedctypes import Value
 from wave import Error as Wave_Error
 import os
 import json
@@ -27,7 +28,6 @@ class Observer():
 class Keyboard(Widget, Observer):
     """Main keyboard class"""
     sound_player = SoundPlayer()
-    CONFIG_PATH = 'configs/'
 
     def __init__(self, settings, config_data, **kwargs):
         super(Keyboard, self).__init__(**kwargs)
@@ -95,26 +95,34 @@ class EditKeyboard(AnchorLayout, Observer):
         super(EditKeyboard, self).__init__(**kwargs)
         self.config = config
         self.config_modifier = config_modifier
-        """self.keyboard = VKeyboard(on_key_up=self.on_key_up)
-        self.keyboard.size = (1500,500)
-        self.keyboard.bind(on_key_up=self.on_key_up)
-        self.add_widget(self.keyboard)"""
+        try:
+            self.change_layout()
+        except ValueError as error:
+            print(error) #TODO: Better handle this error
+
+    def change_layout(self):
         keyLayout = BoxLayout(orientation='vertical')
-        keys = json.load(open("layouts/macbook.json"))
+        keys = json.load(open("layouts/macbook.json")) #TODO: Select file, don't just load this one
         for row in keys:
             rowLayout = BoxLayout(orientation='horizontal')
             for key in row["keys"]:
-                if key["type"] == "key":
-                    rowLayout.add_widget(self.add_key(key, row["size_hint_y"]))
-                elif key["type"] == "layout":
-                    pass #TODO: layout type?
+                rowLayout.add_widget(self.add_key(key, row["size_hint_y"]))
             keyLayout.add_widget(rowLayout)
         self.add_widget(keyLayout)
 
     def add_key(self, key, size_hint_y):
         """Separate function to separate scope and keep key_code in each button"""
-        return Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
+        if key["type"] == "key":
+            return Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
                         on_release=lambda button : self.on_key_up(button, key["key_code"]))
+        elif key["type"] == "box_layout":
+            boxLayout = BoxLayout(size_hint_y=size_hint_y, size_hint_x=key["size_hint_x"],
+                            orientation=key["orientation"])
+            for item in key["children"]:
+                boxLayout.add_widget(self.add_key(item, size_hint_y))
+            return boxLayout
+        else:
+            raise ValueError("Invalid option in layout file")
 
     def update_config(self, config):
         #TODO: check if something has been changed and needs to be saved
@@ -129,6 +137,9 @@ class EditKeyboard(AnchorLayout, Observer):
 
 class KeyboardApp(App):
     """Application start for Kivy"""
+
+    CONFIG_PATH = 'configs/'
+
     def build_config(self, config):
         config.setdefaults('keyboard', {
             'last_used_config': None
@@ -163,7 +174,7 @@ class KeyboardApp(App):
                 self.config_button.text = value
 
     def update_config_data(self, file_name):
-        json_data = json.load(open(Keyboard.CONFIG_PATH + file_name))
+        json_data = json.load(open(self.CONFIG_PATH + file_name))
         self.config_data = {}
         for i in json_data:
             if i["key"] in self.config_data:
@@ -180,7 +191,7 @@ class KeyboardApp(App):
         self.settings = self.config
 
         self.json_files = []
-        for file in os.listdir(os.path.join(os.path.curdir, Keyboard.CONFIG_PATH)):
+        for file in os.listdir(os.path.join(os.path.curdir, self.CONFIG_PATH)):
             if file.endswith(".json") and not file.endswith("settings.json"):
                 self.json_files.append(file)
         if len(self.json_files) == 0:
