@@ -14,7 +14,7 @@ from kivy.core.window import Window
 from soundPlayer import SoundPlayer
 kivy.require('2.0.0')
 
-MODIFIERS = ['shift','rshift','alt','alt-gr','lctrl','rctrl','capslock','super']
+MODIFIERS = ['shift','rshift','alt','ctrl','capslock','meta']
 
 class Observer():
     OBSERVERS = []
@@ -95,8 +95,13 @@ class EditKeyboard(AnchorLayout, Observer):
         self.config = config
         self.config_modifier = config_modifier
         self.edit_modifiers = set()
+        self.lit_button = None
         self.edit_key = None
         self.key_layout = None
+        self.layout = BoxLayout(size_hint=(1,1), orientation="vertical")
+        self.add_widget(self.layout)
+        self.label = Label(size_hint=(1,0.1), text="Select a key to see its config")
+        self.layout.add_widget(self.label)
         try:
             self.change_layout(layout_file)
         except ValueError as error:
@@ -105,12 +110,12 @@ class EditKeyboard(AnchorLayout, Observer):
     def change_layout(self, file_name):
         """Changes the edit_keyboard layout"""
         if self.key_layout is not None:
-            self.remove_widget(self.key_layout)
+            self.layout.remove_widget(self.key_layout)
         self.key_layout = BoxLayout(orientation='vertical')
         keys = json.load(open(file_name))
         for item in keys:
             self.key_layout.add_widget(self.add_key(item, item["size_hint_y"]))
-        self.add_widget(self.key_layout)
+        self.layout.add_widget(self.key_layout)
 
     def add_key(self, key, size_hint_y):
         """Separate function to separate scope and keep key_code in each button"""
@@ -146,7 +151,21 @@ class EditKeyboard(AnchorLayout, Observer):
                 button.background_color = 'red'
         else:
             self.edit_key = key_code
-        print(f"Modifs: {self.edit_modifiers}\n{key_code}")
+            if self.lit_button is not None:
+                self.lit_button.background_color = [1,1,1,1]
+            button.background_color = 'blue'
+            self.lit_button = button
+        not_in_config = True
+        if self.edit_key in self.config:
+            for i in self.config[self.edit_key]:
+                if set(i["modifiers"]) == self.edit_modifiers:
+                    self.label.text = f'Type: {i["type"]}'
+                    if i["type"] == "sound":
+                        self.label.text +=  f' Filepath: {i["data"]["filePath"]}'
+                    not_in_config = False
+                    break;
+        if not_in_config:
+            self.label.text = "No config"
         
 
 class KeyboardApp(App):
@@ -276,7 +295,7 @@ class KeyboardApp(App):
         pass #TODO: write out anything we need/check if things have changed
 
     def edit_config(self, key, modifiers, new_file):
-        print("Editing config")
+        print(f"Editing config\nKey: {key}\nModifiers: {modifiers}")
         for observer in Observer.OBSERVERS:
             if "config_update" in observer.observing:
                 observer.observing["config_update"](self.config_data)
