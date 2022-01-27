@@ -17,12 +17,20 @@ kivy.require('2.0.0')
 MODIFIERS = ['shift','rshift','alt','ctrl','capslock','meta']
 
 class Observer():
+    """Allows for observers to listen to different events
+        For the callback to be used, the observable needs
+        to make a call to notify with the event name and data
+    """
     OBSERVERS = []
     def __init__(self):
         Observer.OBSERVERS.append(self)
         self.observing = {}
     def observe(self, event, callback):
         self.observing[event] = callback
+    def notify(event, data):
+        for observer in Observer.OBSERVERS:
+            if event in observer.observing:
+                observer.observing[event](data)
 
 class Keyboard(Widget, Observer):
     """Main keyboard class"""
@@ -134,6 +142,10 @@ class EditKeyboard(AnchorLayout, Observer):
     def update_config(self, config):
         #TODO: check if something has been changed and needs to be saved
         self.config = config
+        if self.lit_button is not None:
+            self.lit_button.background_color = [1,1,1,1]
+            self.lit_button = None
+        self.label.text = "Select a key to see its config"
 
     def on_key_up(self, button, key_code):
         """If key in modifiers, highlight it, and add it to local modifiers
@@ -232,9 +244,7 @@ class KeyboardApp(App):
             else:
                 self.config_data[i["key"]] = [
                     {"modifiers":i["modifiers"],"type":i["type"],"data":i["data"]}]
-        for observer in Observer.OBSERVERS:
-            if "config_update" in observer.observing:
-                observer.observing["config_update"](self.config_data)
+        Observer.notify("config_update", self.config_data)
 
     def build(self):
         parent = BoxLayout(orientation='vertical')
@@ -296,18 +306,14 @@ class KeyboardApp(App):
 
     def edit_config(self, key, modifiers, new_file):
         print(f"Editing config\nKey: {key}\nModifiers: {modifiers}")
-        for observer in Observer.OBSERVERS:
-            if "config_update" in observer.observing:
-                observer.observing["config_update"](self.config_data)
+        Observer.notify("config_update", self.config_data)
 
     def reset_settings(self):
         """Resets all settings to default values"""
         self.settings = {"last_used_config": None, "layout_config": None}
         with open("settings.json", 'w') as settings_file:
             json.dump(self.settings, settings_file)
-        for observer in Observer.OBSERVERS:
-            if "setting_update" in observer.observing:
-                observer.observing["setting_update"](self.settings)
+        Observer.notify("setting_update", self.settings)
 
 
 if __name__ == '__main__':
