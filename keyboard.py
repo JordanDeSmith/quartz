@@ -179,7 +179,46 @@ class KeyboardApp(App):
         return False
 
     def save_changes(self, config, file):
-        print(f"Saving changes to: {file}")
+        json_string = "["
+        first = True
+        for key in config:
+            for mod in config[key]:
+                if key == "\\":
+                    key = "\\\\"
+                if not first:
+                    json_string += ","
+                json_string += "{" + f"""
+                        "key":"{key}",
+                        "modifiers":["""
+                first = True
+                for modifier in mod["modifiers"]:
+                    if not first:
+                        json_string += ","
+                    else:
+                        first= False
+                    json_string += f'"{modifier}"'
+                json_string += f"""],
+                        "type":"{mod["type"]}",
+                        "data":""" + "{"
+                first = True
+                for k, v in mod["data"].items():
+                    if not first:
+                        json_string += ","
+                    else:
+                        first = False
+                    if isinstance(v, bool):
+                        v = str(v).lower()
+                    else:
+                        v = f'"{v}"'
+                    json_string += f'"{k}":{v}'
+                json_string += "}"
+            json_string += "}"
+            first = False
+        json_string += "]"
+        
+        json_data = json.loads(json_string)
+        with open(os.path.join(os.path.curdir, self.CONFIG_PATH, file), 'w', encoding="UTF-8") as out_file:
+            out_file.write(json.dumps(json_data, indent=4))
         self.changed_config = False
 
     def edit_config(self, key, modifiers, new_type, new_file=None, loopable=False):
@@ -196,6 +235,7 @@ class KeyboardApp(App):
                         item["data"]["loopable"] = loopable
                     else:
                         item["data"] = {}
+                    self.changed_config = True #TODO: Only if it's actually changed
             if not entered:
                 new_data = {"modifiers":modifiers, "type":new_type, "data":{}}
                 if new_type == "sound":
