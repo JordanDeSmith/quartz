@@ -212,10 +212,10 @@ class KeyboardApp(App):
                         v = f'"{v}"'
                     json_string += f'"{k}":{v}'
                 json_string += "}"
-            json_string += "}"
-            first = False
+                json_string += "}"
+                first = False
         json_string += "]"
-        
+
         json_data = json.loads(json_string)
         with open(os.path.join(os.path.curdir, self.CONFIG_PATH, file), 'w', encoding="UTF-8") as out_file:
             out_file.write(json.dumps(json_data, indent=4))
@@ -229,21 +229,24 @@ class KeyboardApp(App):
             for item in self.config_data.get(key):
                 if set(modifiers) == set(item["modifiers"]):
                     entered = True
-                    item["type"] = new_type
-                    if new_type == "sound":
-                        item["data"]["filePath"] = new_file
-                        item["data"]["loopable"] = loopable
+                    if new_type == "clear":
+                        self.config_data.get(key).remove(item)
                     else:
-                        item["data"] = {}
+                        item["type"] = new_type
+                        if new_type == "sound":
+                            item["data"]["filePath"] = new_file
+                            item["data"]["loopable"] = loopable
+                        else:
+                            item["data"] = {}
                     self.changed_config = True #TODO: Only if it's actually changed
-            if not entered:
+            if not entered and new_type != "clear":
                 new_data = {"modifiers":modifiers, "type":new_type, "data":{}}
                 if new_type == "sound":
                     new_data["data"]["filePath"] = new_file
                     new_data["data"]["loopable"] = loopable
                 self.config_data[key].append(new_data)
                 self.changed_config = True #TODO: Only if it's actually changed
-        else:
+        elif new_type != "clear":
             new_data = {"modifiers":modifiers, "type":new_type, "data":{}}
             if new_type == "sound":
                     new_data["data"]["filePath"] = new_file

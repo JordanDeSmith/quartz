@@ -58,9 +58,12 @@ class EditKeyboard(AnchorLayout, Observer):
         self.drop_down.bind(on_select=lambda instance, x: self.change_action(type_button, x))
         self.editing_box.add_widget(type_button)
         self.editing_box.add_widget(self.load_file)
-        self.editing_box.add_widget(Label(text="Looping:", size_hint_x=0.5))
+        self.looping_label = Label(text="Looping:", size_hint_x=0.5)
+        self.editing_box.add_widget(self.looping_label)
         self.loop_check = CheckBox(color=[1,1,1,1], size_hint_x=0.2)
         self.editing_box.add_widget(self.loop_check)
+        self.editing_box.add_widget(Button(text="Clear", size_hint=(0.42,1),
+            on_release=lambda btn: self.clear()))
         self.editing_box.add_widget(Button(text="Cancel", size_hint=(0.42,1),
             on_release=lambda btn: self.edit(False)))
         self.editing_box.add_widget(Button(size_hint=(0.32,1), text="Save",
@@ -87,7 +90,11 @@ class EditKeyboard(AnchorLayout, Observer):
         self.edit(False)
         #TODO: Double check values
         self.config_modifier(self.edit_key, self.edit_modifiers, self.edit_type,
-            self.new_file, loopable=self.loop_check._get_active()) #TODO: Get input on whether sound should loop or not
+            self.new_file, loopable=self.loop_check._get_active())
+
+    def clear(self):
+        self.edit(False)
+        self.config_modifier(self.edit_key, self.edit_modifiers, "clear")
 
     def change_file(self, path, file):
         #TODO: Display the loaded file
@@ -102,9 +109,11 @@ class EditKeyboard(AnchorLayout, Observer):
         if action == "sound":
             self.load_file.disabled = False
             self.loop_check.disabled = False
+            self.looping_label.disabled = False
         else:
             self.load_file.disabled = True
             self.loop_check.disabled = True
+            self.looping_label.disabled = True
 
     def edit(self, open):
         self.edit_layout.clear_widgets()
