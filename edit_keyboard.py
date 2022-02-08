@@ -9,6 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.checkbox import CheckBox
 
 ACTION_TYPES = ['sound', 'stopAll', 'stopLooping']
 
@@ -57,9 +58,12 @@ class EditKeyboard(AnchorLayout, Observer):
         self.drop_down.bind(on_select=lambda instance, x: self.change_action(type_button, x))
         self.editing_box.add_widget(type_button)
         self.editing_box.add_widget(self.load_file)
-        self.editing_box.add_widget(Button(text="Cancel", size_hint=(0.3,1),
+        self.editing_box.add_widget(Label(text="Looping:", size_hint_x=0.5))
+        self.loop_check = CheckBox(color=[1,1,1,1], size_hint_x=0.2)
+        self.editing_box.add_widget(self.loop_check)
+        self.editing_box.add_widget(Button(text="Cancel", size_hint=(0.42,1),
             on_release=lambda btn: self.edit(False)))
-        self.editing_box.add_widget(Button(size_hint=(0.3,1), text="Save",
+        self.editing_box.add_widget(Button(size_hint=(0.32,1), text="Save",
             on_release=lambda btn: self.save_change()))
 
 
@@ -83,7 +87,7 @@ class EditKeyboard(AnchorLayout, Observer):
         self.edit(False)
         #TODO: Double check values
         self.config_modifier(self.edit_key, self.edit_modifiers, self.edit_type,
-            self.new_file, loopable=False) #TODO: Get input on whether sound should loop or not
+            self.new_file, loopable=self.loop_check._get_active()) #TODO: Get input on whether sound should loop or not
 
     def change_file(self, path, file):
         #TODO: Display the loaded file
@@ -97,15 +101,26 @@ class EditKeyboard(AnchorLayout, Observer):
         self.edit_type = action
         if action == "sound":
             self.load_file.disabled = False
+            self.loop_check.disabled = False
         else:
             self.load_file.disabled = True
+            self.loop_check.disabled = True
 
     def edit(self, open):
         self.edit_layout.clear_widgets()
         if open:
             self.edit_layout.size_hint=(1,1)
             self.edit_layout.add_widget(self.editing_box)
-            self.drop_down.select(ACTION_TYPES[0])    #TODO: load what the current key type is if valid
+            start_action = ACTION_TYPES[0]
+            if self.edit_key in self.config:
+                for i in self.config[self.edit_key]:
+                    if set(i["modifiers"]) == self.edit_modifiers:
+                        start_action = i["type"]
+                        if start_action == "sound":
+                            self.loop_check._set_active(i["data"]["loopable"])
+            else:
+                self.loop_check._set_active(False)
+            self.drop_down.select(start_action)
         else:
             self.edit_layout.size_hint=(0.1,1)
             self.edit_layout.add_widget(self.edit_button)
