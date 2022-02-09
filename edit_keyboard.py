@@ -138,6 +138,9 @@ class EditKeyboard(AnchorLayout, Observer):
 
     def change_layout(self, file_name):
         """Changes the edit_keyboard layout"""
+        self.mod_keys = {}
+        for modifier in MODIFIERS:
+            self.mod_keys[modifier] = list()
         if self.key_layout is not None:
             self.layout.remove_widget(self.key_layout)
         self.key_layout = BoxLayout(orientation='vertical')
@@ -149,8 +152,11 @@ class EditKeyboard(AnchorLayout, Observer):
     def add_key(self, key, size_hint_y):
         """Separate function to separate scope and keep key_code in each button"""
         if key["type"] == "key":
-            return Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
+            button = Button(text=key['text'], size_hint_x=key["size_hint_x"], size_hint_y=size_hint_y,
                         on_release=lambda button : self.on_key_up(button, key["key_code"]))
+            if key["key_code"] in MODIFIERS:
+                self.mod_keys.get(key["key_code"]).append(button)
+            return button
         elif key["type"] == "box_layout":
             boxLayout = BoxLayout(size_hint_y=key["size_hint_y"], size_hint_x=key["size_hint_x"],
                             orientation=key["orientation"])
@@ -162,32 +168,9 @@ class EditKeyboard(AnchorLayout, Observer):
 
     def update_config(self, config):
         self.config = config
-        #TODO: Find a better way to make sure this updates
-        if self.lit_button is not None:
-            self.lit_button.background_color = [1,1,1,1]
-            self.lit_button = None
-        self.label.text = "Select a key to see its config"
+        self.update_selected()
 
-    def on_key_up(self, button, key_code):
-        """If key in modifiers, highlight it, and add it to local modifiers
-            If it's already in local, remove it, and un-highlight it.
-            Otherwise update what key we're currently looking at
-            Then update a label (which I need to make...) to say what it is set to
-            And have something ready that can change what it is set to. 
-        """
-        if key_code in MODIFIERS:   #FIXME: If having multiple command/alt/etc. breaks if the other is clicked
-            if key_code in self.edit_modifiers:
-                button.background_color = [1,1,1,1]
-                self.edit_modifiers.remove(key_code)
-            else:
-                self.edit_modifiers.add(key_code)
-                button.background_color = 'red'
-        else:
-            self.edit_key = key_code
-            if self.lit_button is not None:
-                self.lit_button.background_color = [1,1,1,1]
-            button.background_color = 'blue'
-            self.lit_button = button
+    def update_selected(self):
         not_in_config = True
         if self.edit_key in self.config:
             for i in self.config[self.edit_key]:
@@ -203,3 +186,27 @@ class EditKeyboard(AnchorLayout, Observer):
                     break;
         if not_in_config:
             self.label.text = "No config"
+
+    def on_key_up(self, button, key_code):
+        """If key in modifiers, highlight it, and add it to local modifiers
+            If it's already in local, remove it, and un-highlight it.
+            Otherwise update what key we're currently looking at
+            Then update a label (which I need to make...) to say what it is set to
+            And have something ready that can change what it is set to. 
+        """
+        if key_code in MODIFIERS:
+            if key_code in self.edit_modifiers:
+                for key in self.mod_keys[key_code]:
+                    key.background_color = [1,1,1,1]
+                self.edit_modifiers.remove(key_code)
+            else:
+                self.edit_modifiers.add(key_code)
+                for key in self.mod_keys[key_code]:
+                    key.background_color = 'red'
+        else:
+            self.edit_key = key_code
+            if self.lit_button is not None:
+                self.lit_button.background_color = [1,1,1,1]
+            button.background_color = 'blue'
+            self.lit_button = button
+        self.update_selected()

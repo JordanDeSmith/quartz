@@ -34,6 +34,7 @@ class SaveChanges(Widget):
             on_release=lambda btn: self.close(False)))
         popup_layout.add_widget(Button(text="Save",
             on_release=lambda btn: self.close(True)))
+        #TODO: Save as, be able to change what file it's saving to/create new one
 
         self.save_popup.open()
 
