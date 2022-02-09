@@ -97,7 +97,7 @@ class KeyboardApp(App):
                     SaveChanges(self.save_changes, self.config_data, self.config_file)
                 self.config_file = value
                 self.update_config_data(value)
-                self.config_button.text = value
+                self.config_label.text = f"Config: {value}"
             if token == ('keyboard', 'layout_config'):
                 self.edit_keyboard.change_layout(self.LAYOUT_PATH + value)
 
@@ -156,16 +156,17 @@ class KeyboardApp(App):
             self.config.write()
             layout_file += self.layout_files[0]
 
-        #TODO: Move button, label that it opens settings,
-        # and make separate label that shows what config we're using.
-        self.config_button = Button(text = self.settings.get('keyboard', 'last_used_config'),
-            width=500, size_hint=(None,None))
+        self.config_button = Button(text="Settings",
+            width=150, size_hint=(None,None))
         self.config_button.bind(on_release=self.open_settings)
         parent.add_widget(self.config_button)
+        self.config_label = Label(text=f"Config: {self.settings.get('keyboard', 'last_used_config')}",
+            width=500, size_hint=(None,None))
+        parent.add_widget(self.config_label)
         self.keyboard = SoundKeyboard(self.settings, self.config_data)
         self.keyboard.observe("config_update", self.keyboard.update_config)
         parent.add_widget(self.keyboard)
-        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config, layout_file, size_hint=(1,1.2),
+        self.edit_keyboard = EditKeyboard(self.config_data, self.edit_config, layout_file, size_hint=(1,4),
             anchor_x='center', anchor_y='center')
         self.edit_keyboard.observe("config_update", self.edit_keyboard.update_config)
         parent.add_widget(self.edit_keyboard)
