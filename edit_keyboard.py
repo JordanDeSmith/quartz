@@ -75,7 +75,7 @@ class EditKeyboard(AnchorLayout, Observer):
         
         display_layout = BoxLayout(size_hint=(1,0.1), orientation="horizontal")
         self.layout.add_widget(display_layout)
-        self.label = Label(size_hint=(1,1), text="Select a key to see its config")
+        self.label = Label(size_hint=(0.4,1), text="Select a key to see its config")
 
         self.edit_layout = BoxLayout(size_hint=(1,1), orientation="horizontal")
         display_layout.add_widget(self.label)
@@ -88,9 +88,9 @@ class EditKeyboard(AnchorLayout, Observer):
 
     def save_change(self):
         self.edit(False)
-        #TODO: Double check values
-        self.config_modifier(self.edit_key, self.edit_modifiers, self.edit_type,
-            self.new_file, loopable=self.loop_check._get_active())
+        if (self.new_file is not None or self.edit_type != "sound") and self.edit_key is not None:
+            self.config_modifier(self.edit_key, self.edit_modifiers, self.edit_type,
+                self.new_file, loopable=self.loop_check._get_active())
 
     def clear(self):
         self.edit(False)
@@ -100,6 +100,7 @@ class EditKeyboard(AnchorLayout, Observer):
         #TODO: Display the loaded file
         if len(file) > 0:
             self.new_file = os.path.join(path, file[0])
+            self.label.text = self.new_file.split('/')[-1]
         else:
             self.new_file = None
 
@@ -191,9 +192,13 @@ class EditKeyboard(AnchorLayout, Observer):
         if self.edit_key in self.config:
             for i in self.config[self.edit_key]:
                 if set(i["modifiers"]) == self.edit_modifiers:
-                    self.label.text = f'Type: {i["type"]}'
                     if i["type"] == "sound":
-                        self.label.text +=  f' Filepath: {i["data"]["filePath"]}'
+                        self.new_file = i["data"]["filePath"]
+                        self.label.text =  i["data"]["filePath"].split("/")[-1]
+                        if i["data"]["loopable"]:
+                            self.label.text += "    (looping)"
+                    else:
+                        self.label.text = i["type"]
                     not_in_config = False
                     break;
         if not_in_config:

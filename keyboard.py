@@ -159,7 +159,7 @@ class KeyboardApp(App):
         #TODO: Move button, label that it opens settings,
         # and make separate label that shows what config we're using.
         self.config_button = Button(text = self.settings.get('keyboard', 'last_used_config'),
-            width=200, size_hint=(None,None))
+            width=500, size_hint=(None,None))
         self.config_button.bind(on_release=self.open_settings)
         parent.add_widget(self.config_button)
         self.keyboard = SoundKeyboard(self.settings, self.config_data)
@@ -222,6 +222,7 @@ class KeyboardApp(App):
         self.changed_config = False
 
     def edit_config(self, key, modifiers, new_type, new_file=None, loopable=False):
+        #TODO: Currently can save individual sounds, but have to switch config or exit to save entire config
         #TODO: Fix this function, it's super redundant
         modifiers = list(modifiers)
         if key in self.config_data:
