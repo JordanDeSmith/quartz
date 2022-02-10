@@ -1,3 +1,5 @@
+"""This module handles displaying the keyboard, and allowing for edits"""
+
 import os
 import json
 from observer import Observer
@@ -97,7 +99,6 @@ class EditKeyboard(AnchorLayout, Observer):
         self.config_modifier(self.edit_key, self.edit_modifiers, "clear")
 
     def change_file(self, path, file):
-        #TODO: Display the loaded file
         if len(file) > 0:
             self.new_file = os.path.join(path, file[0])
             self.label.text = self.new_file.split('/')[-1]

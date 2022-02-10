@@ -158,9 +158,13 @@ class KeyboardApp(App):
             layout_file += self.layout_files[0]
 
         self.config_button = Button(text="Settings",
-            width=150, size_hint=(None,None))
-        self.config_button.bind(on_release=self.open_settings)
+            width=150, size_hint=(None,None), on_release=self.open_settings)    
         parent.add_widget(self.config_button)
+        self.save_button = Button(text="Save",
+            width=150, size_hint=(None,None),
+            on_release=lambda btn: self.save_changes(self.config_data, self.config_file))
+        self.save_button.set_disabled(True)
+        parent.add_widget(self.save_button)
         self.config_label = Label(text=f"Config: {self.settings.get('keyboard', 'last_used_config')}",
             width=500, size_hint=(None,None))
         parent.add_widget(self.config_label)
@@ -182,46 +186,40 @@ class KeyboardApp(App):
 
     def save_changes(self, config, file):
         json_string = "["
-        first = True
-        for key in config:
-            for mod in config[key]:
+        for key_count, key in enumerate(config):
+            for mod_count, mod in enumerate(config[key]):
                 if key == "\\":
                     key = "\\\\"
-                if not first:
-                    json_string += ","
                 json_string += "{" + f"""
                         "key":"{key}",
                         "modifiers":["""
-                first = True
-                for modifier in mod["modifiers"]:
-                    if not first:
-                        json_string += ","
-                    else:
-                        first= False
+                for modifier_count, modifier in enumerate(mod["modifiers"]):
                     json_string += f'"{modifier}"'
+                    if modifier_count < len(mod["modifiers"]) - 1:
+                        json_string += ","
                 json_string += f"""],
                         "type":"{mod["type"]}",
                         "data":""" + "{"
-                first = True
-                for k, v in mod["data"].items():
-                    if not first:
-                        json_string += ","
-                    else:
-                        first = False
+                for data_count, (k, v) in enumerate(mod["data"].items()):
                     if isinstance(v, bool):
                         v = str(v).lower()
                     else:
                         v = f'"{v}"'
                     json_string += f'"{k}":{v}'
+                    if data_count < len(mod["data"].items()) - 1:
+                        json_string += ","
                 json_string += "}"
                 json_string += "}"
-                first = False
+                if mod_count < len(config[key]) - 1:
+                    json_string += ","
+            if key_count < len(config) - 1:
+                json_string += ","
         json_string += "]"
-
         json_data = json.loads(json_string)
         with open(os.path.join(os.path.curdir, self.CONFIG_PATH, file), 'w', encoding="UTF-8") as out_file:
             out_file.write(json.dumps(json_data, indent=4))
         self.changed_config = False
+        self.save_button.set_disabled(True)
 
     def edit_config(self, key, modifiers, new_type, new_file=None, loopable=False):
         #TODO: Currently can save individual sounds, but have to switch config or exit to save entire config
@@ -233,7 +231,10 @@ class KeyboardApp(App):
                 if set(modifiers) == set(item["modifiers"]):
                     entered = True
                     if new_type == "clear":
-                        self.config_data.get(key).remove(item)
+                        if len(self.config_data.get(key)) > 1:
+                            self.config_data.get(key).remove(item)
+                        else:
+                            del self.config_data[key]
                     else:
                         item["type"] = new_type
                         if new_type == "sound":
@@ -259,6 +260,7 @@ class KeyboardApp(App):
 
         if self.changed_config:
             Observer.notify("config_update", self.config_data)
+            self.save_button.set_disabled(False)
 
     def reset_settings(self):
         """Resets all settings to default values"""

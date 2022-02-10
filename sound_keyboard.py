@@ -1,3 +1,5 @@
+"""This module handles playing sounds from pressed keys."""
+
 from wave import Error as Wave_Error
 from soundPlayer import SoundPlayer
 from observer import Observer
